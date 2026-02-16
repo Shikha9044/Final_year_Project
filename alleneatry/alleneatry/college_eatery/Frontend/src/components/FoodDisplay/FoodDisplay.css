@@ -1,0 +1,40 @@
+/* Subcategory button styles */
+.subcategory-btn-group {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.subcategory-btn {
+  padding: 7px 18px;
+  border-radius: 20px;
+  border: 1px solid #0c0202;
+  background: #fff;
+  color: #5831b2;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+  outline: none;
+}
+.subcategory-btn.active, .subcategory-btn:hover {
+  background: #5831b2;
+  color: #fff;
+  box-shadow: 0 2px 8px #5831b233;
+}
+.food-display {
+    margin-top: 30px;
+  }
+  
+  .food-display h2 {
+    font-size: max(2vw, 24px);
+    font-weight: 600;
+  }
+  
+  .food-display-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    margin-top: 30px;
+    gap: 30px;
+    row-gap: 50px;
+  }
+  

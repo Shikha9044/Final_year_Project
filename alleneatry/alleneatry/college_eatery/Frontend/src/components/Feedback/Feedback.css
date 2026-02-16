@@ -1,0 +1,44 @@
+.feedback-container {
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+  padding: 24px;
+  max-width: 400px;
+  margin: 32px auto;
+  text-align: center;
+}
+.feedback-container h3 {
+  margin-bottom: 16px;
+  color: #49557e;
+}
+.feedback-container textarea {
+  width: 100%;
+  min-height: 80px;
+  border-radius: 6px;
+  border: 1px solid #e0e0e0;
+  padding: 10px;
+  font-size: 1rem;
+  margin-bottom: 12px;
+  resize: vertical;
+}
+.feedback-container button {
+  background: #49557e;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 24px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.feedback-container button:hover {
+  background: #7b5eea;
+}
+.feedback-success {
+  color: #2ecc40;
+  margin-top: 10px;
+}
+.feedback-error {
+  color: #e74c3c;
+  margin-top: 10px;
+}

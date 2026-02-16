@@ -1,0 +1,17 @@
+.qr-container {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+.qr-container h3 { margin: 0 0 12px 0; }
+.qr-box { display:flex; align-items:center; justify-content:center; padding: 12px; background:#fafafa; border-radius: 10px; }
+.qr-details { margin-top: 12px; display: grid; gap: 6px; }
+.qr-details .row { display:flex; justify-content: space-between; font-size: 14px; }
+.hint { margin-top: 10px; color:#666; font-size:12px; }
+.receipt { margin-top: 16px; padding: 12px; background:#f8f9fa; border-radius: 8px; }
+.receipt h4 { margin: 0 0 10px 0; }
+.receipt .row { display:flex; justify-content: space-between; font-size: 14px; margin: 6px 0; }
+.receipt .token b { font-size: 18px; color:#333; }
+.download-btn { margin-top: 12px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color:#fff; border:none; padding:10px 14px; border-radius:8px; cursor:pointer; }
+.download-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(102,126,234,0.4); }

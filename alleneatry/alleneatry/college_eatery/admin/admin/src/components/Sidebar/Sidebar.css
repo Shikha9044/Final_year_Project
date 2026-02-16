@@ -1,0 +1,85 @@
+.sidebar {
+
+  width: 18%;
+  min-height: 100vh;
+  border: 1.5px solid #440ac0;
+  border-top: 0;
+  font-size: max(1vw, 10px);
+
+
+
+}
+
+.sidebar-options {
+  padding-top: 100px;
+  padding-left: 20%;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+
+}
+
+.sidebar-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid #440ac0;
+  border-right: 0;
+  padding: 8px 10px;
+  border-radius: 3px 0px 0px 3px;
+  cursor: pointer;
+}
+
+.sidebar-option.active {
+  background-color: rgb(127, 123, 211);
+  border-color: #440ac0;
+}
+
+.menu-icon {
+  font-size: 24px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-container {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-container svg {
+  width: 100%;
+  height: 100%;
+  transition: transform 0.3s ease;
+}
+
+.sidebar-option:hover .icon-container svg {
+  transform: scale(1.1);
+}
+
+/* Special styling for Today's Special menu item */
+.sidebar-option[href="/todays-menu"] {
+  background: linear-gradient(135deg, rgba(255, 107, 107, 0.1), rgba(255, 165, 0, 0.1));
+  border-color: #ff6b6b;
+}
+
+.sidebar-option[href="/todays-menu"]:hover {
+  background: linear-gradient(135deg, rgba(255, 107, 107, 0.2), rgba(255, 165, 0, 0.2));
+  border-color: #ff5252;
+}
+
+.sidebar-option[href="/todays-menu"] p {
+  color: #ff6b6b;
+  font-weight: 600;
+}
+
+@media (max-width:900px) {
+  .sidebar-option p {
+    display: none;
+  }
+}

@@ -1,0 +1,141 @@
+
+.order-item {
+  background: linear-gradient(120deg, #f8fafc 60%, #e3f0ff 100%);
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+  border: none;
+  margin: 32px 0;
+  padding: 32px 28px 24px 28px;
+  transition: box-shadow 0.2s;
+  font-size: 15px;
+  color: #2d3748;
+  position: relative;
+}
+.order-item:hover {
+  box-shadow: 0 8px 32px rgba(0,0,0,0.13);
+}
+.order-item h4 {
+  font-size: 1.2rem;
+  color: #007bff;
+  margin-bottom: 2px;
+}
+.order-item .order-status-badge {
+  display: inline-block;
+  padding: 4px 14px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.order-item .order-section-title {
+  font-size: 1rem;
+  color: #444;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+.order-item .order-items-list {
+  margin-bottom: 18px;
+}
+.order-item .order-item-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+.order-item .order-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 18px;
+}
+.order-item .order-footer .order-total {
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: #28a745;
+}
+.order-item .order-footer .order-date {
+  font-size: 13px;
+  color: #888;
+}
+.order-item select {
+  background: #e3f0ff;
+  border: 1px solid #007bff;
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-size: 15px;
+  margin-bottom: 10px;
+  outline: none;
+  transition: border 0.2s;
+}
+.order-item select:focus {
+  border: 1.5px solid #0056b3;
+}
+.order-item button {
+  background: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 7px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: background 0.2s;
+}
+.order-item button:hover {
+  background: #0056b3;
+}
+.order-item .order-customer {
+  background: #f1f8e9;
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+}
+.order-item .order-payment {
+  background: #fff3e0;
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+}
+.order-item .order-status-section {
+  background: #e3f0ff;
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+}
+
+.order-item-food,
+.order-item-name {
+  font-weight: 600;
+}
+
+.order-item-name {
+  margin-top: 30px;
+  margin-bottom: 5px;
+}
+
+.order-item-address {
+  margin-bottom: 10px;
+}
+
+.order-item select {
+  background-color: #ffe8e4;
+  border: 1px solid tomato;
+  width: max(10vw, 120px);
+  padding: 10px;
+  outline: none;
+}
+
+@media (max-width:1000px) {
+  .order-item {
+    font-size: 13px;
+    padding: 18px 6px;
+  }
+  .order-item select {
+    padding: 7px;
+    font-size: 13px;
+  }
+  .order-item img {
+    width: 36px;
+  }
+}
