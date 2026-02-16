@@ -105,8 +105,15 @@ const Orders = () => {
   };
 
   useEffect(() => {
+    // initial fetch
     fetchAllOrders();
     fetchStats();
+    // poll for new orders/stats every 5 seconds
+    const interval = setInterval(() => {
+      fetchAllOrders();
+      fetchStats();
+    }, 5000);
+    return () => clearInterval(interval);
   }, [filter, currentPage]);
 
   if (loading) {
