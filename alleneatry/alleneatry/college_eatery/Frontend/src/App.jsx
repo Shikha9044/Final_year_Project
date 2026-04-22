@@ -18,6 +18,7 @@ import StudentRegister from "./pages/StudentAuth/StudentRegister";
 import axios from "axios";
 import SearchPage from "./pages/Searchpage";
 import Feedback from "./components/Feedback/Feedback";
+import AnalysisDashboard from "./pages/Analysis/AnalysisDashboard";
 
 const App = () => {
   const [showLogin, setShowLogin] = useState(false);
@@ -42,6 +43,7 @@ const App = () => {
           <Route path="/track/:orderId" element={<OrderTracker />} />
           <Route path="/order-history" element={<OrderHistory />} />
           <Route path="/feedback" element={<Feedback />} />
+          <Route path="/analysis" element={<AnalysisDashboard />} />
         </Routes>
       </div>
       <Footer />
