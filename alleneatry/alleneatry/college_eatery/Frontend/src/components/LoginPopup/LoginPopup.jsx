@@ -84,9 +84,10 @@ const LoginPopup = ({ setShowLogin }) => {
     try {
       const res = await axios.post(url + '/api/user/otp/send', { phone: phoneState.phone });
       if (res.data && res.data.success) {
-        setPhoneState(s => ({ ...s, step: 'otp' }));
-        // If dev returns OTP, prefill for convenience
-        if (res.data.otp) setPhoneState(s => ({ ...s, otp: res.data.otp }));
+        // Move to OTP entry step and prefill OTP (if returned) in a single state update
+        setPhoneState(s => ({ ...s, step: 'otp', otp: res.data.otp || s.otp }));
+        // Provide user feedback
+        setError('OTP sent to the provided phone number');
       } else {
         setError(res.data?.message || 'Failed to send OTP');
       }
@@ -162,7 +163,7 @@ const LoginPopup = ({ setShowLogin }) => {
             <>
               {phoneState.step === 'phone' ? (
                 <>
-                  <input name='phone' value={phoneState.phone} onChange={(e) => setPhoneState(s => ({ ...s, phone: e.target.value }))} type='text' placeholder='Phone number' />
+                  <input name='phone' value={phoneState.phone} onChange={(e) => setPhoneState(s => ({ ...s, phone: e.target.value.trim() }))} type='text' placeholder='Phone number' inputMode='numeric' pattern='[0-9]+' required />
                   <button type='button' onClick={sendOtp} disabled={loading}>{loading ? 'Sending...' : 'Send OTP'}</button>
                 </>
               ) : (

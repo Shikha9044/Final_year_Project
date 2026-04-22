@@ -2,6 +2,7 @@ import React, { useState, useContext } from "react";
 import "./Navbar.css";
 import { assets } from "../../assets/assets";
 import { FaHome, FaUtensils, FaPhoneAlt, FaMobileAlt } from "react-icons/fa";
+import { MdInsights } from "react-icons/md";
 import { Link } from "react-router-dom";
 import { StoreContext } from "../Context/StoreContext";
 
@@ -73,6 +74,14 @@ const Navbar = ({ setShowLogin }) => {
           <span className="nav-icon"><FaPhoneAlt /></span>
           Contact Us
         </a>
+        <Link
+          to="/analysis"
+          onClick={() => setMenu("analysis")}
+          className={menu === "analysis" ? "active" : ""}
+        >
+          <span className="nav-icon"><MdInsights /></span>
+          Analysis
+        </Link>
       </ul>
   <div className="navbar-right">
         <Link to="/search" className="search-link">
