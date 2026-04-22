@@ -25,6 +25,8 @@ connectDB();
 // api endpoints
 app.use("/api/food", foodRouter);
 app.use("/images", express.static('uploads'));
+// serve static frontend files from `public` (simple GSAP demo will live here)
+app.use(express.static('public'));
 app.use("/api/user", userRouter);
 app.use("/api/cart", cartRouter);
 app.use("/api/order", orderRouter);

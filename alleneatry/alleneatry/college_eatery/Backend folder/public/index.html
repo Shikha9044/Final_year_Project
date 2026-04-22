@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>GSAP Demo</title>
+  <style>
+    body{font-family:Arial,Helvetica,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#f5f7fb}
+    #box{width:160px;height:160px;background:#2b7a78;color:#fff;display:flex;align-items:center;justify-content:center;border-radius:12px;font-size:24px}
+  </style>
+</head>
+<body>
+  <div id="box">GSAP</div>
+
+  <!-- GSAP from CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script>
+    // simple entrance animation
+    gsap.from("#box", { duration: 1.2, y: -120, opacity: 0, scale: 0.8, ease: "bounce.out" });
+
+    // continuous subtle float
+    gsap.to("#box", { y: 10, duration: 2.5, repeat: -1, yoyo: true, ease: "sine.inOut", delay: 1.2 });
+  </script>
+</body>
+</html>

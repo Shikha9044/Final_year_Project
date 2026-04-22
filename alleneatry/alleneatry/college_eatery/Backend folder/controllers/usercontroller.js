@@ -341,8 +341,10 @@ const sendOtpToPhone = async (req, res) => {
             }
         }
 
-        console.log(`OTP for ${phone}: ${otp}`);
-        return res.json({ success: true, message: 'OTP sent (dev)', otp });
+        // In development we avoid returning the raw OTP in the API response
+        // so the OTP is always sent only via SMS when Twilio is configured.
+        // Do not log the OTP in production or return it to the client.
+        return res.json({ success: true, message: 'OTP sent' });
     } catch (error) {
         console.error('Send OTP error:', error);
         return res.status(500).json({ success: false, message: 'Error sending OTP' });
