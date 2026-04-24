@@ -312,6 +312,33 @@ const getOrderStats = async (req, res) => {
     }
 };
 
+// Get total ordered quantity by item (Admin only)
+const getItemOrderStats = async (req, res) => {
+    try {
+        const itemStats = await orderModel.aggregate([
+            { $unwind: "$items" },
+            {
+                $group: {
+                    _id: "$items.name",
+                    totalOrders: { $sum: "$items.quantity" }
+                }
+            },
+            { $sort: { totalOrders: -1, _id: 1 } }
+        ]);
+
+        res.json({
+            success: true,
+            itemStats: itemStats.map((item) => ({
+                name: item._id,
+                totalOrders: item.totalOrders
+            }))
+        });
+    } catch (error) {
+        console.error("Get item order stats error:", error);
+        res.status(500).json({ success: false, message: "Error fetching item order statistics" });
+    }
+};
+
 // Get order by ID (Admin only)
 const getOrderByIdAdmin = async (req, res) => {
     try {
@@ -341,5 +368,6 @@ export {
     cancelOrder,
     getAllOrders,
     getOrderStats,
+    getItemOrderStats,
     getOrderByIdAdmin
 };

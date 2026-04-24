@@ -7,6 +7,7 @@ import {
     cancelOrder,
     getAllOrders,
     getOrderStats,
+    getItemOrderStats,
     getOrderByIdAdmin
 } from "../controllers/orderController.js";
 import authMiddleware from "../middleware/auth.js";
@@ -25,6 +26,7 @@ orderRouter.post("/:orderId/cancel", authMiddleware, cancelOrder);
 // Admin routes (require admin authentication)
 orderRouter.get("/admin/all", adminAuthMiddleware, getAllOrders);
 orderRouter.get("/admin/stats", adminAuthMiddleware, getOrderStats);
+orderRouter.get("/admin/item-stats", adminAuthMiddleware, getItemOrderStats);
 orderRouter.get("/admin/:orderId", adminAuthMiddleware, getOrderByIdAdmin);
 orderRouter.put("/admin/:orderId/status", adminAuthMiddleware, updateOrderStatus);
 

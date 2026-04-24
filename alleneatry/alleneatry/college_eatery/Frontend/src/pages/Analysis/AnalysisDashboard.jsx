@@ -1,169 +1,210 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useState } from 'react';
+import axios from 'axios';
 import {
-  Bar,
   BarChart,
-  CartesianGrid,
+  Bar,
+  PieChart,
+  Pie,
   Cell,
-  LabelList,
-  Legend,
-  ResponsiveContainer,
-  Tooltip,
+  CartesianGrid,
   XAxis,
   YAxis,
-} from "recharts";
-import "./AnalysisDashboard.css";
+  Tooltip,
+  Legend,
+  ResponsiveContainer
+} from 'recharts';
 
-const canteenData = {
-  orders: [
-    { item: "Burger", count: 50 },
-    { item: "Pizza", count: 30 },
-    { item: "Tea", count: 70 },
-    { item: "Sandwich", count: 20 },
-  ],
-  stock: [
-    { item: "Burger", remaining: 20 },
-    { item: "Pizza", remaining: 5 },
-    { item: "Tea", remaining: 40 },
-    { item: "Sandwich", remaining: 0 },
-  ],
-};
-
-const lowStockThreshold = 5;
-const orderColors = ["#2563eb", "#f97316", "#14b8a6", "#8b5cf6", "#ef4444", "#22c55e"];
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
+const PIE_COLORS = ['#22c55e', '#e5e7eb'];
 
 const AnalysisDashboard = () => {
-  const mergedItems = useMemo(() => {
-    return canteenData.orders.map((orderItem, index) => {
-      const stockItem = canteenData.stock.find((stock) => stock.item === orderItem.item);
-      const remaining = stockItem ? stockItem.remaining : 0;
+  const [stats, setStats] = useState(null);
+  const [itemStats, setItemStats] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-      return {
-        item: orderItem.item,
-        count: orderItem.count,
-        remaining,
-        orderColor: orderColors[index % orderColors.length],
-        stockColor: remaining === 0 ? "#b91c1c" : remaining <= lowStockThreshold ? "#ef4444" : "#16a34a",
-      };
-    });
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        setLoading(true);
+        setError('');
+
+        const response = await axios.get(`${API_URL}/api/order/admin/stats`, {
+          headers: { token: localStorage.getItem('token') }
+        });
+
+        const itemResponse = await axios.get(`${API_URL}/api/order/admin/item-stats`, {
+          headers: { token: localStorage.getItem('token') }
+        });
+
+        if (response.data?.success) {
+          setStats(response.data.stats);
+        } else {
+          setError('Failed to load analysis data.');
+        }
+
+        if (itemResponse.data?.success) {
+          setItemStats(itemResponse.data.itemStats || []);
+        }
+      } catch (fetchError) {
+        setError('Unable to load analysis data.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
   }, []);
 
-  const mostOrdered = useMemo(
-    () => [...mergedItems].sort((a, b) => b.count - a.count)[0],
-    [mergedItems]
-  );
+  const chartData = useMemo(() => {
+    const currentStats = stats || {};
 
-  const leastOrdered = useMemo(
-    () => [...mergedItems].sort((a, b) => a.count - b.count)[0],
-    [mergedItems]
-  );
+    return [
+      { name: 'Pending', value: currentStats.pendingOrders || 0 },
+      { name: 'Preparing', value: currentStats.preparingOrders || 0 },
+      { name: 'Today Orders', value: currentStats.todayOrders || 0 }
+    ];
+  }, [stats]);
 
-  const lowStockItems = useMemo(
-    () => mergedItems.filter((item) => item.remaining > 0 && item.remaining <= lowStockThreshold),
-    [mergedItems]
-  );
+  const revenueData = useMemo(() => {
+    const currentStats = stats || {};
+    const todayRevenue = currentStats.todayRevenue || 0;
+    const totalRevenue = currentStats.totalRevenue || todayRevenue;
+    return [
+      { name: 'Today', value: todayRevenue },
+      { name: 'Other', value: Math.max(totalRevenue - todayRevenue, 0) }
+    ];
+  }, [stats]);
 
-  const outOfStockItems = useMemo(
-    () => mergedItems.filter((item) => item.remaining === 0),
-    [mergedItems]
-  );
+  const itemChartData = useMemo(() => {
+    return itemStats.map((item) => ({
+      name: item.name,
+      totalOrders: item.totalOrders
+    }));
+  }, [itemStats]);
+
+  if (loading) {
+    return (
+      <div style={{ padding: '32px', textAlign: 'center' }}>
+        Loading analysis...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div style={{ padding: '32px', color: '#dc2626', textAlign: 'center' }}>
+        {error}
+      </div>
+    );
+  }
+
+  const currentStats = stats || {};
 
   return (
-    <div className="analysis-page">
-      <div className="analysis-shell">
-        <section className="analysis-hero">
-          <h1>Canteen Analysis Dashboard</h1>
-          <p>Overview of orders and stock availability</p>
-        </section>
+    <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
+      <h2 style={{ marginBottom: '24px' }}>Order & Revenue Analysis</h2>
 
-        <section className="chart-grid">
-          <article className="chart-card">
-            <h2>Orders per Item</h2>
-            <ResponsiveContainer width="100%" height={320}>
-              <BarChart data={mergedItems} margin={{ top: 22, right: 18, left: 8, bottom: 22 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#d1d5db" />
-                <XAxis dataKey="item" label={{ value: "Item Names", position: "insideBottom", dy: 12 }} />
-                <YAxis
-                  allowDecimals={false}
-                  label={{ value: "Number of Orders", angle: -90, position: "insideLeft" }}
-                />
-                <Tooltip formatter={(value) => `${value} orders`} />
-                <Legend />
-                <Bar dataKey="count" name="Orders" radius={[6, 6, 0, 0]}>
-                  {mergedItems.map((entry) => (
-                    <Cell key={entry.item} fill={entry.orderColor} />
-                  ))}
-                  <LabelList dataKey="count" position="top" fill="#111827" />
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </article>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+          gap: '16px',
+          marginBottom: '28px'
+        }}
+      >
+        <StatCard label="Today's Orders" value={currentStats.todayOrders || 0} accent="#2563eb" />
+        <StatCard label="Today's Revenue" value={`₹${currentStats.todayRevenue || 0}`} accent="#16a34a" />
+        <StatCard label="Pending Orders" value={currentStats.pendingOrders || 0} accent="#f59e0b" />
+        <StatCard label="Preparing Orders" value={currentStats.preparingOrders || 0} accent="#ef4444" />
+      </div>
 
-          <article className="chart-card">
-            <h2>Remaining Stock per Item</h2>
-            <ResponsiveContainer width="100%" height={320}>
-              <BarChart data={mergedItems} layout="vertical" margin={{ top: 12, right: 25, left: 32, bottom: 12 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#d1d5db" />
-                <XAxis
-                  type="number"
-                  allowDecimals={false}
-                  label={{ value: "Remaining Quantity", position: "insideBottom", dy: 10 }}
-                />
-                <YAxis type="category" dataKey="item" label={{ value: "Item Names", angle: -90, position: "insideLeft" }} width={95} />
-                <Tooltip formatter={(value) => `${value} units`} />
-                <Legend
-                  payload={[
-                    { value: "In Stock", type: "square", color: "#16a34a" },
-                    { value: "Low Stock", type: "square", color: "#ef4444" },
-                    { value: "Out of Stock", type: "square", color: "#b91c1c" },
-                  ]}
-                />
-                <Bar dataKey="remaining" name="Remaining Stock" radius={[0, 6, 6, 0]}>
-                  {mergedItems.map((entry) => (
-                    <Cell key={entry.item} fill={entry.stockColor} />
-                  ))}
-                  <LabelList dataKey="remaining" position="right" fill="#111827" />
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </article>
-        </section>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+          gap: '24px'
+        }}
+      >
+        <Panel title="Order Status Overview">
+          <ResponsiveContainer width="100%" height={320}>
+            <BarChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" />
+              <YAxis allowDecimals={false} />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="value" fill="#2563eb" radius={[8, 8, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </Panel>
 
-        <section className="insights-card">
-          <h2>Key Insights</h2>
-          <div className="insight-grid">
-            <article className="insight-box">
-              <h3>Most Ordered Item</h3>
-              <p>
-                {mostOrdered?.item}: <strong>{mostOrdered?.count ?? 0}</strong> orders
-              </p>
-            </article>
-            <article className="insight-box">
-              <h3>Least Ordered Item</h3>
-              <p>
-                {leastOrdered?.item}: <strong>{leastOrdered?.count ?? 0}</strong> orders
-              </p>
-            </article>
-            <article className="insight-box">
-              <h3>Low Stock Items</h3>
-              <p>
-                {lowStockItems.length > 0
-                  ? lowStockItems.map((item) => `${item.item} (${item.remaining})`).join(", ")
-                  : "No low stock items"}
-              </p>
-            </article>
-            <article className="insight-box">
-              <h3>Out-of-Stock Items</h3>
-              <p>
-                {outOfStockItems.length > 0
-                  ? outOfStockItems.map((item) => item.item).join(", ")
-                  : "No out-of-stock items"}
-              </p>
-            </article>
-          </div>
-        </section>
+        <Panel title="Total Orders by Item">
+          <ResponsiveContainer width="100%" height={320}>
+            <BarChart data={itemChartData} layout="vertical" margin={{ left: 20, right: 20 }}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis type="number" allowDecimals={false} />
+              <YAxis dataKey="name" type="category" width={110} />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="totalOrders" fill="#f59e0b" radius={[0, 8, 8, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </Panel>
+
+        <Panel title="Today Revenue Split">
+          <ResponsiveContainer width="100%" height={320}>
+            <PieChart>
+              <Pie
+                data={revenueData}
+                dataKey="value"
+                nameKey="name"
+                outerRadius={110}
+                innerRadius={65}
+                paddingAngle={2}
+              >
+                {revenueData.map((entry, index) => (
+                  <Cell key={entry.name} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip />
+              <Legend />
+            </PieChart>
+          </ResponsiveContainer>
+        </Panel>
       </div>
     </div>
   );
 };
+
+const StatCard = ({ label, value, accent }) => (
+  <div
+    style={{
+      background: '#fff',
+      borderRadius: '16px',
+      padding: '18px 20px',
+      boxShadow: '0 12px 30px rgba(15, 23, 42, 0.08)',
+      border: `1px solid ${accent}22`
+    }}
+  >
+    <div style={{ color: '#64748b', fontSize: '0.92rem', marginBottom: '10px' }}>{label}</div>
+    <div style={{ color: accent, fontSize: '2rem', fontWeight: 700, lineHeight: 1.1 }}>{value}</div>
+  </div>
+);
+
+const Panel = ({ title, children }) => (
+  <div
+    style={{
+      background: '#fff',
+      borderRadius: '20px',
+      padding: '20px',
+      boxShadow: '0 16px 40px rgba(15, 23, 42, 0.08)',
+      border: '1px solid rgba(148, 163, 184, 0.18)'
+    }}
+  >
+    <h3 style={{ marginTop: 0, marginBottom: '16px' }}>{title}</h3>
+    {children}
+  </div>
+);
 
 export default AnalysisDashboard;
