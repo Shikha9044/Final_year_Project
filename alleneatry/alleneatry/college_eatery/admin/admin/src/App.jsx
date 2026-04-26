@@ -7,7 +7,7 @@ import List from './pages/List/List';
 import Add from './pages/Add/Add';
 import Orders from './pages/Orders/Orders';
 import OrderDetail from './pages/Orders/OrderDetail';
-import Analysis from "./pages/Analysis/Analysis";
+import CancelledOrders from "./pages/CancelledOrders/CancelledOrders";
 import AdminProfile from "./pages/AdminProfile/AdminProfile";
 import TodaysMenu from './pages/TodaysMenu/TodaysMenu';
 import Dashboard from './pages/Dashboard/Dashboard';
@@ -62,7 +62,7 @@ const App = () => {
             <Route path="/todays-menu" element={<TodaysMenu url={url}/>} />
             <Route path="/feedback" element={<FeedbackAdmin />} />
             <Route path="/user-feedbacks" element={<UserFeedbacks />} />
-            <Route path="/analysis" element={<Analysis />} />
+            <Route path="/cancelled-orders" element={<CancelledOrders url={url} />} />
             <Route path="/profile" element={<AdminProfile user={user} setUser={setUser} />} />
             <Route path="/orders/:id" element={<OrderDetails />} />
           </Routes>

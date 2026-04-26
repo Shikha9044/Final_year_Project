@@ -1,0 +1,184 @@
+.morning-brunch {
+  margin: 24px 0 10px;
+}
+
+.morning-brunch-header {
+  text-align: center;
+}
+
+.morning-brunch-header h2 {
+  text-align: center;
+  margin: 0;
+  font-family: "Pacifico", "Jost", sans-serif;
+  font-size: clamp(1.5rem, 2.4vw, 2.2rem);
+  line-height: 1.05;
+  display: inline-block;
+  transform: skewX(-3deg);
+  background: linear-gradient(90deg, #ff6a00 0%, #ffb200 50%, #ff6a00 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  position: relative;
+  padding-right: 66px;
+}
+
+.morning-brunch-star-badge {
+  position: absolute;
+  top: -10px;
+  right: -5px;
+  width: 56px;
+  height: 56px;
+  border-radius: 8px;
+  background: linear-gradient(145deg, #d50000, #ff3b30);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 900;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  -webkit-text-fill-color: #ffffff;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.1);
+}
+
+.morning-brunch-header h2::after {
+  content: "";
+  display: block;
+  width: 76px;
+  height: 6px;
+  margin-top: 8px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #ff6a00, #ffb200);
+  transform: skewX(3deg);
+}
+
+.morning-brunch-header p {
+  margin: 10px 0 14px;
+  color: #0b66d0;
+  font-size: 1rem;
+  font-style: italic;
+  text-align: center;
+}
+
+.morning-brunch-track {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  padding: 4px 4px 10px;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: thin;
+  scroll-behavior: smooth;
+}
+
+.morning-brunch-track::-webkit-scrollbar {
+  height: 8px;
+}
+
+.morning-brunch-track::-webkit-scrollbar-thumb {
+  background: #cfd8e6;
+  border-radius: 999px;
+}
+
+.morning-brunch-card {
+  min-width: 220px;
+  max-width: 220px;
+  border-radius: 16px;
+  background: #ffffff;
+  border: 1px solid #efe6d7;
+  box-shadow: 0 8px 18px rgba(27, 35, 55, 0.1);
+  overflow: hidden;
+  scroll-snap-align: start;
+}
+
+.morning-brunch-image {
+  width: 100%;
+  height: 130px;
+  object-fit: cover;
+}
+
+.morning-brunch-name {
+  padding: 10px 12px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #1f2f52;
+}
+
+.morning-brunch-price {
+  padding: 0 12px;
+  color: #ff5a1f;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.morning-brunch-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 0 12px 12px;
+}
+
+.morning-brunch-add {
+  width: 35px;
+  cursor: pointer;
+  border-radius: 50%;
+  box-shadow: 0 0 4px #00000020;
+}
+
+.morning-brunch-add-disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  filter: grayscale(0.3);
+}
+
+.morning-brunch-counter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px;
+  border-radius: 50px;
+  background: #fff;
+  box-shadow: 0 0 6px #00000012;
+}
+
+.morning-brunch-counter img {
+  width: 28px;
+  cursor: pointer;
+}
+
+.morning-brunch-counter p {
+  margin: 0;
+  min-width: 12px;
+  text-align: center;
+  font-weight: 700;
+  color: #1f2f52;
+}
+
+.morning-brunch-order-btn {
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #ff6a00, #ffb200);
+  color: #fff;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 8px 14px;
+  cursor: pointer;
+}
+
+.morning-brunch-out {
+  color: #c0392b;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+@media (max-width: 768px) {
+  .morning-brunch-card {
+    min-width: 180px;
+    max-width: 180px;
+  }
+
+  .morning-brunch-image {
+    height: 108px;
+  }
+}

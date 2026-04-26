@@ -6,29 +6,14 @@ import { MdInsights } from "react-icons/md";
 import { Link } from "react-router-dom";
 import { StoreContext } from "../Context/StoreContext";
 
-
-import { useNavigate } from "react-router-dom";
-
 const Navbar = ({ setShowLogin }) => {
   const [menu, setMenu] = useState("home");
   const { token, user, setToken, setUser, cartItems } = useContext(StoreContext);
-  const [showTrackModal, setShowTrackModal] = useState(false);
-  const [trackId, setTrackId] = useState("");
-  const navigate = useNavigate();
 
   const handleLogout = () => {
     setToken("");
     setUser(null);
     localStorage.removeItem("token");
-  };
-
-  const handleTrackOrder = (e) => {
-    e.preventDefault();
-    if (trackId.trim()) {
-      setShowTrackModal(false);
-      navigate(`/track/${trackId.trim()}`);
-      setTrackId("");
-    }
   };
 
   return (
@@ -64,7 +49,7 @@ const Navbar = ({ setShowLogin }) => {
           className={menu === "mobile-app" ? "active" : ""}
         >
           <span className="nav-icon"><FaMobileAlt /></span>
-          Mobile App
+          Recommended
         </a>
         <a
           href="#footer"

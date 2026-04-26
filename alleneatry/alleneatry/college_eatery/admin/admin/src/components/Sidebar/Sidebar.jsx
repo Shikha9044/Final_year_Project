@@ -27,9 +27,9 @@ const Sidebar = () => {
           </div>
           <p>Today's Special</p>
         </NavLink>
-        <NavLink to='/analysis' className="sidebar-option">
+        <NavLink to='/cancelled-orders' className="sidebar-option">
           <img src={assets.order_icon} alt="" />
-          <p>Analysis</p>
+          <p>Last Order Cancel</p>
         </NavLink>
   {/* Profile link removed as requested */}
       </div>

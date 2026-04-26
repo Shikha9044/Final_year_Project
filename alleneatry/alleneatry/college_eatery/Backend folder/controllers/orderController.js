@@ -126,6 +126,164 @@ const getUserOrders = async (req, res) => {
     }
 };
 
+// Get personalized food recommendations from previous orders
+const getUserRecommendations = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 6, 1), 10);
+
+        const recentOrders = await orderModel.find({
+            userId,
+            status: { $ne: 'cancelled' }
+        })
+            .sort({ createdAt: -1 })
+            .limit(30)
+            .select('items createdAt');
+
+        const orderedItemMap = new Map();
+        const categoryAffinity = new Map();
+
+        for (const order of recentOrders) {
+            for (const item of order.items || []) {
+                const itemId = item?.foodId?.toString();
+                if (!itemId) continue;
+
+                const existing = orderedItemMap.get(itemId) || {
+                    _id: itemId,
+                    name: item.name,
+                    image: item.image,
+                    price: item.price,
+                    category: item.category,
+                    quantity: 0,
+                    orderCount: 0,
+                    latestOrderedAt: order.createdAt
+                };
+
+                existing.quantity += item.quantity || 1;
+                existing.orderCount += 1;
+                if (!existing.latestOrderedAt || new Date(order.createdAt) > new Date(existing.latestOrderedAt)) {
+                    existing.latestOrderedAt = order.createdAt;
+                }
+
+                orderedItemMap.set(itemId, existing);
+
+                if (item.category) {
+                    const current = categoryAffinity.get(item.category) || 0;
+                    categoryAffinity.set(item.category, current + (item.quantity || 1));
+                }
+            }
+        }
+
+        const orderedItems = Array.from(orderedItemMap.values());
+        const orderedIds = orderedItems.map((item) => item._id);
+
+        const scoredFavorites = orderedItems
+            .map((item) => {
+                const categoryScore = categoryAffinity.get(item.category) || 0;
+                const daysSinceLastOrder = item.latestOrderedAt
+                    ? Math.max(0, (Date.now() - new Date(item.latestOrderedAt).getTime()) / (1000 * 60 * 60 * 24))
+                    : 30;
+
+                const rawScore = 70 + (item.quantity * 3) + (item.orderCount * 2) + (categoryScore * 0.6) - (daysSinceLastOrder * 0.5);
+                const matchScore = Math.max(72, Math.min(99, Math.round(rawScore)));
+
+                return {
+                    _id: item._id,
+                    name: item.name,
+                    image: item.image,
+                    price: item.price,
+                    category: item.category,
+                    matchScore,
+                    source: 'history',
+                    reason: 'Based on your previous orders'
+                };
+            })
+            .sort((a, b) => b.matchScore - a.matchScore);
+
+        const topCategories = Array.from(categoryAffinity.entries())
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 3)
+            .map(([category]) => category);
+
+        let categorySuggestions = [];
+        if (topCategories.length > 0) {
+            const candidates = await foodModel.find({
+                category: { $in: topCategories },
+                _id: { $nin: orderedIds },
+                stock: { $gt: 0 }
+            }).select('name image price category');
+
+            categorySuggestions = candidates
+                .map((item) => {
+                    const affinity = categoryAffinity.get(item.category) || 0;
+                    const rawScore = 58 + (affinity * 1.8);
+                    return {
+                        _id: item._id,
+                        name: item.name,
+                        image: item.image,
+                        price: item.price,
+                        category: item.category,
+                        matchScore: Math.max(60, Math.min(95, Math.round(rawScore))),
+                        source: 'category',
+                        reason: `Popular in your favorite ${item.category} category`
+                    };
+                })
+                .sort((a, b) => b.matchScore - a.matchScore);
+        }
+
+        const popularFallback = await orderModel.aggregate([
+            { $match: { status: { $ne: 'cancelled' } } },
+            { $unwind: '$items' },
+            {
+                $group: {
+                    _id: '$items.foodId',
+                    totalQty: { $sum: '$items.quantity' },
+                    name: { $first: '$items.name' },
+                    image: { $first: '$items.image' },
+                    price: { $first: '$items.price' },
+                    category: { $first: '$items.category' }
+                }
+            },
+            { $sort: { totalQty: -1 } },
+            { $limit: 20 }
+        ]);
+
+        const popularSuggestions = popularFallback
+            .filter((item) => !orderedIds.includes(item._id?.toString()))
+            .map((item) => ({
+                _id: item._id,
+                name: item.name,
+                image: item.image,
+                price: item.price,
+                category: item.category,
+                matchScore: Math.max(55, Math.min(88, Math.round(52 + (item.totalQty * 0.8)))),
+                source: 'popular',
+                reason: 'Trending with other students'
+            }));
+
+        const merged = [...scoredFavorites, ...categorySuggestions, ...popularSuggestions];
+        const uniqueRecommendations = [];
+        const seen = new Set();
+
+        for (const item of merged) {
+            const itemId = item?._id?.toString();
+            if (!itemId || seen.has(itemId)) continue;
+            seen.add(itemId);
+            uniqueRecommendations.push(item);
+            if (uniqueRecommendations.length >= limit) break;
+        }
+
+        res.json({
+            success: true,
+            recommendations: uniqueRecommendations,
+            basedOnHistory: recentOrders.length > 0
+        });
+    } catch (error) {
+        console.error('Get recommendations error:', error);
+        res.status(500).json({ success: false, message: 'Error fetching recommendations' });
+    }
+};
+
 // Get order by ID
 const getOrderById = async (req, res) => {
     try {
@@ -363,6 +521,7 @@ const getOrderByIdAdmin = async (req, res) => {
 export {
     createOrder,
     getUserOrders,
+    getUserRecommendations,
     getOrderById,
     updateOrderStatus,
     cancelOrder,
