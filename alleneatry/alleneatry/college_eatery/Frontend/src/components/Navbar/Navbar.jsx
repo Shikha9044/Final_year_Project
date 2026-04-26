@@ -2,7 +2,7 @@ import React, { useState, useContext } from "react";
 import "./Navbar.css";
 import { assets } from "../../assets/assets";
 import { FaHome, FaUtensils, FaPhoneAlt, FaMobileAlt } from "react-icons/fa";
-import { MdInsights } from "react-icons/md";
+import { FaRegCommentDots } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import { StoreContext } from "../Context/StoreContext";
 
@@ -60,12 +60,12 @@ const Navbar = ({ setShowLogin }) => {
           Contact Us
         </a>
         <Link
-          to="/analysis"
-          onClick={() => setMenu("analysis")}
-          className={menu === "analysis" ? "active" : ""}
+          to="/feedback"
+          onClick={() => setMenu("feedback")}
+          className={menu === "feedback" ? "active" : ""}
         >
-          <span className="nav-icon"><MdInsights /></span>
-          Analysis
+          <span className="nav-icon"><FaRegCommentDots /></span>
+          Feedback
         </Link>
       </ul>
   <div className="navbar-right">
