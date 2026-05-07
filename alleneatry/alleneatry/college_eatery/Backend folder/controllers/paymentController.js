@@ -1,6 +1,7 @@
 import Stripe from 'stripe';
 import orderModel from '../models/orderModel.js';
 import foodModel from '../models/foodModel.js';
+import userModel from '../models/userModel.js';
 
 // Initialize Stripe with your secret key
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_your_stripe_secret_key');
@@ -258,6 +259,9 @@ const processOrderWithPayment = async (req, res) => {
         // Generate pickup token
         order.tokenNumber = Math.floor(1000 + Math.random() * 9000).toString();
         await order.save();
+
+        // Clear the user's cart after the order is successfully created.
+        await userModel.findByIdAndUpdate(userId, { cartData: {} });
 
         res.status(201).json({
             success: true,

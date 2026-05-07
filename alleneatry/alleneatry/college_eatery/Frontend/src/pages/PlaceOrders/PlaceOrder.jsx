@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import PaymentQR from '../../components/Payment/PaymentQR';
 
 const PlaceOrder = () => {
-  const { getTotalCartAmount, token, food_list, cartItems, url, setCartItems } = useContext(StoreContext);
+  const { getTotalCartAmount, token, food_list, cartItems, url, clearCart, loading: contextLoading } = useContext(StoreContext);
 
   const [data, setData] = useState({
     firstName: '',
@@ -16,7 +16,7 @@ const PlaceOrder = () => {
     phone: '',
   });
   
-  const [loading, setLoading] = useState(false);
+  const [placingOrder, setPlacingOrder] = useState(false);
   const [error, setError] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('upi');
   const [showPaymentQR, setShowPaymentQR] = useState(false);
@@ -27,6 +27,7 @@ const PlaceOrder = () => {
   const [placedOrderId, setPlacedOrderId] = useState('');
   const [placedOrderNumber, setPlacedOrderNumber] = useState('');
   const [rfCardNumber, setRfCardNumber] = useState('');
+  const totalAmount = getTotalCartAmount();
 
   const onChangeHandler = (event) => {
     const name = event.target.name;
@@ -37,7 +38,7 @@ const PlaceOrder = () => {
 
   const placeOrder = async (event) => {
     event.preventDefault();
-    setLoading(true);
+    setPlacingOrder(true);
     setError('');
     
     try {
@@ -54,7 +55,7 @@ const PlaceOrder = () => {
 
       if (orderItems.length === 0) {
         setError('No items in cart to order');
-        setLoading(false);
+        setPlacingOrder(false);
         return;
       }
 
@@ -84,7 +85,7 @@ const PlaceOrder = () => {
 
       if (response.data.success) {
         // Clear cart after successful order
-        setCartItems({});
+        await clearCart();
         const createdId = response.data?.order?._id;
         const serverToken = response.data?.order?.tokenNumber;
         const orderNum = response.data?.order?.orderNumber;
@@ -104,7 +105,7 @@ const PlaceOrder = () => {
         setError('An error occurred while placing the order');
       }
     } finally {
-      setLoading(false);
+      setPlacingOrder(false);
     }
   };
 
@@ -112,18 +113,22 @@ const PlaceOrder = () => {
   useEffect(() => {
     if (!token) {
       navigate('/');
-    } else if (getTotalCartAmount() === 0 && !showSuccess) {
+    } else if (!contextLoading && totalAmount === 0 && !showSuccess) {
       navigate('/cart');
     }
-    // Auto-redirect to order history after placing order
+    // Auto-redirect to order-linked feedback after successful payment/order placement.
     if (showSuccess) {
       const timeout = setTimeout(() => {
         setShowSuccess(false);
-        navigate('/orders');
-      }, 2500); // 2.5 seconds
+        if (placedOrderId) {
+          navigate(`/feedback?orderId=${placedOrderId}&source=payment`);
+          return;
+        }
+        navigate('/feedback');
+      }, 1600);
       return () => clearTimeout(timeout);
     }
-  }, [token, navigate, getTotalCartAmount, showSuccess]);
+  }, [token, navigate, showSuccess, placedOrderId, contextLoading, totalAmount]);
 
   // No client-side token generation; server returns token in order
 
@@ -131,7 +136,11 @@ const PlaceOrder = () => {
     return <div>Please login to place an order.</div>;
   }
 
-  if (getTotalCartAmount() === 0) {
+  if (contextLoading) {
+    return <div>Loading checkout...</div>;
+  }
+
+  if (totalAmount === 0) {
     return <div>Your cart is empty. Please add items to proceed.</div>;
   }
 
@@ -144,9 +153,13 @@ const PlaceOrder = () => {
             <p style={{margin:'0 0 12px 0'}}>Thank you! Your order has been placed successfully.</p>
             {placedOrderNumber && (<p style={{margin:'0 0 8px 0'}}><b>Order:</b> {placedOrderNumber}</p>)}
             {tokenNumber && (<p style={{margin:'0 0 16px 0'}}><b>Pickup Token:</b> {tokenNumber}</p>)}
+            <p style={{margin:'0 0 16px 0', color:'#334155'}}>Redirecting you to quick feedback...</p>
             <div style={{display:'flex',gap:12,justifyContent:'flex-end'}}>
               <button type="button" onClick={()=>{ setShowSuccess(false); navigate('/'); }} style={{padding:'10px 14px',borderRadius:8,border:'1px solid #ddd',background:'#fff',cursor:'pointer'}}>Close</button>
-              <button type="button" onClick={()=>{ setShowSuccess(false); navigate('/orders'); }} style={{padding:'10px 14px',borderRadius:8,border:'1px solid #007bff',background:'#007bff',color:'#fff',cursor:'pointer'}}>View Order History</button>
+              <button type="button" onClick={()=>{ setShowSuccess(false); navigate('/order-history'); }} style={{padding:'10px 14px',borderRadius:8,border:'1px solid #007bff',background:'#007bff',color:'#fff',cursor:'pointer'}}>View Order History</button>
+              {placedOrderId && (
+                <button type="button" onClick={()=>{ setShowSuccess(false); navigate(`/feedback?orderId=${placedOrderId}&source=payment`); }} style={{padding:'10px 14px',borderRadius:8,border:'1px solid #16a34a',background:'#16a34a',color:'#fff',cursor:'pointer'}}>Give Feedback</button>
+              )}
               {placedOrderId && (
                 <button type="button" onClick={()=>{ setShowSuccess(false); navigate(`/track/${placedOrderId}`); }} className="place-order-btn">Track Order</button>
               )}
@@ -242,12 +255,12 @@ const PlaceOrder = () => {
           <div>
             <div className="cart-total-details">
               <p>Subtotal</p>
-              <p>₹{getTotalCartAmount()}</p>
+              <p>₹{totalAmount}</p>
             </div>
             <hr />
             <div className="cart-total-details">
               <b>Total</b>
-              <b>₹{getTotalCartAmount()}</b>
+              <b>₹{totalAmount}</b>
             </div>
           </div>
           {paymentMethod === 'upi' ? (
@@ -268,7 +281,7 @@ const PlaceOrder = () => {
                 </button>
               ) : (
                 <PaymentQR 
-                  amount={getTotalCartAmount()} 
+                  amount={totalAmount} 
                   vpa={"kashyaprishabh8957@okicici"} 
                   payeeName={"AllenEatery"}
                   note={"Order payment"}
@@ -283,8 +296,8 @@ const PlaceOrder = () => {
                 />
               )}
               {paymentReady && (
-                <button type="submit" disabled={loading} className="place-order-btn">
-                  {loading ? "Placing Order..." : "PLACE ORDER"}
+                <button type="submit" disabled={placingOrder} className="place-order-btn">
+                  {placingOrder ? "Placing Order..." : "PLACE ORDER"}
                 </button>
               )}
             </div>
@@ -302,7 +315,7 @@ const PlaceOrder = () => {
               <button
                 type="button"
                 className="proceed-payment-btn"
-                disabled={loading || !rfCardNumber}
+                disabled={placingOrder || !rfCardNumber}
                 onClick={() => {
                   setPaymentReady(true);
                 }}
@@ -310,8 +323,8 @@ const PlaceOrder = () => {
                 TAP RF CARD TO PAY
               </button>
               {paymentReady && (
-                <button type="submit" disabled={loading} className="place-order-btn">
-                  {loading ? "Placing Order..." : "PLACE ORDER"}
+                <button type="submit" disabled={placingOrder} className="place-order-btn">
+                  {placingOrder ? "Placing Order..." : "PLACE ORDER"}
                 </button>
               )}
             </div>

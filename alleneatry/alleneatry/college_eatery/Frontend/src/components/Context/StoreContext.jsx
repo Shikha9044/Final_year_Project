@@ -1,5 +1,5 @@
 import axios from "axios";
-import { createContext, useEffect, useState } from "react";
+import { createContext, useCallback, useEffect, useState } from "react";
 export const StoreContext=createContext(null);
 
 const StoreContextProvider=(props)=>{
@@ -39,7 +39,18 @@ const removeFromCart=async (itemId)=>{
     }
 }
 
-const cleanupInvalidCartItems = () => {
+const clearCart = async () => {
+    setCartItems({});
+    if (token) {
+        try {
+            await axios.post(url + "/api/cart/clear", {}, { headers: { token } });
+        } catch (error) {
+            console.error("Error clearing cart:", error);
+        }
+    }
+}
+
+const cleanupInvalidCartItems = useCallback(() => {
     if (food_list.length === 0) return;
     
     const validItemIds = food_list.map(item => item._id);
@@ -55,7 +66,7 @@ const cleanupInvalidCartItems = () => {
         console.log('Cleaning up invalid cart items');
         setCartItems(cleanedCartItems);
     }
-};
+}, [food_list, cartItems]);
 
 const getTotalCartAmount=()=>{
     // Early return if food_list is not ready
@@ -97,8 +108,19 @@ const safeGetTotalCartAmount = () => {
 
 const fetchFoodList= async ()=>{
     try {
-        const response = await axios.get(url+"/api/food/list");
-        setFoodList(response.data.data)
+        const [foodResponse, ratingResponse] = await Promise.all([
+            axios.get(url+"/api/food/list"),
+            axios.get(url+"/api/feedback/item-ratings/public").catch(() => ({ data: { success: false, itemRatings: {} } }))
+        ]);
+
+        const ratingsByItem = ratingResponse?.data?.success ? ratingResponse.data.itemRatings || {} : {};
+        const mergedFoodList = (foodResponse.data.data || []).map((item) => ({
+            ...item,
+            rating: ratingsByItem[item._id]?.rating || 0,
+            ratingCount: ratingsByItem[item._id]?.count || 0
+        }));
+
+        setFoodList(mergedFoodList)
     } catch (error) {
         console.error("Error fetching food list:", error);
         setFoodList([]);
@@ -163,7 +185,7 @@ useEffect(() => {
     if (food_list.length > 0) {
         cleanupInvalidCartItems();
     }
-}, [food_list]);
+}, [food_list, cleanupInvalidCartItems]);
 
 const contextValue = {
     food_list,
@@ -171,6 +193,7 @@ const contextValue = {
     setCartItems,
     addToCart,
     removeFromCart,
+    clearCart,
     getTotalCartAmount,
     safeGetTotalCartAmount,
     fetchFoodList,

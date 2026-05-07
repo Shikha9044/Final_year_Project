@@ -7,39 +7,38 @@ import { assets } from '../../assets/assets';
 const Cart = () => {
   const { cartItems, food_list, removeFromCart, safeGetTotalCartAmount, url, token, loading } = useContext(StoreContext);
   const navigate = useNavigate();
-  
-  console.log('Cart Items:', cartItems);
-  console.log('Food List:', food_list);
-  console.log('Loading:', loading);
-  console.log('Token status:', token ? 'Logged in' : 'Not logged in');
 
   // Show loading state while data is being fetched
   if (loading) {
     return <div className="cart-loading">Loading cart...</div>;
   }
 
-  // Additional safety check - ensure food_list and cartItems are loaded
-  if (!food_list || food_list.length === 0) {
-    return <div className="cart-loading">Loading food items...</div>;
-  }
+  const cartEntryIds = Object.entries(cartItems || {})
+    .filter(([, quantity]) => Number(quantity) > 0)
+    .map(([itemId]) => itemId);
 
-  if (!cartItems || Object.keys(cartItems).length === 0) {
+  if (cartEntryIds.length === 0) {
     return <p>Your cart is empty. Please add items to proceed.</p>;
   }
 
   // Use the safe version from context
   const cartTotal = safeGetTotalCartAmount();
-  console.log('Total Cart Amount:', cartTotal);
 
-  // Final safety check - if cartTotal is still undefined or NaN, return early
-  if (cartTotal === undefined || cartTotal === null || isNaN(cartTotal)) {
-    console.error('Invalid cart total calculated:', cartTotal);
-    return <div className="cart-loading">Error loading cart. Please refresh the page.</div>;
-  }
+  const safeTotal = Number.isFinite(cartTotal) ? cartTotal : 0;
 
-  if (cartTotal === 0) {
-    return <p>Your cart is empty. Please add items to proceed.</p>;
-  }
+  const cartLineItems = cartEntryIds.map((itemId) => {
+    const matchedItem = (food_list || []).find((food) => food._id === itemId);
+    const quantity = Number(cartItems[itemId]) || 0;
+    const price = matchedItem?.price || 0;
+    return {
+      itemId,
+      name: matchedItem?.name || 'Item',
+      image: matchedItem?.image || '',
+      price,
+      quantity,
+      lineTotal: price * quantity
+    };
+  });
 
 
   return (
@@ -55,35 +54,26 @@ const Cart = () => {
         </div>
         <br />
         <hr />
-        {food_list.map((item) => {
-          // Additional safety check for item properties
-          if (!item || !item._id || !item.price || !item.name) {
-            console.warn('Invalid item in food_list:', item);
-            return null;
-          }
-          
-          if (cartItems[item._id] > 0) {
+        {cartLineItems.map((item) => {
             return (
-              <div key={item._id}>
+              <div key={item.itemId}>
                 <div className='cart-items-title cart-items-item'>
-                  <img src={url + "/images/" + item.image} alt="" />
+                  <img src={item.image ? url + "/images/" + item.image : assets.food_1} alt="" />
                   <p>{item.name}</p>
                   <p>₹{item.price}</p>
-                  <p>{cartItems[item._id]}</p>
-                  <p>₹{item.price * cartItems[item._id]}</p>
+                  <p>{item.quantity}</p>
+                  <p>₹{item.lineTotal}</p>
                   <img
                     src={assets.remove_icon_red}
                     alt="Remove"
                     className='remove-btn-img'
-                    onClick={() => removeFromCart(item._id)}
+                    onClick={() => removeFromCart(item.itemId)}
                     style={{ cursor: 'pointer', width: 28, height: 28 }}
                   />
                 </div>
                 <hr />
               </div>
             );
-          }
-          return null;
         })}
       </div>
       <div className="cart-bottom">
@@ -92,26 +82,21 @@ const Cart = () => {
           <div>
             <div className="cart-total-details">
               <p>Subtotal</p>
-              <p>₹{cartTotal}</p>
+              <p>₹{safeTotal}</p>
             </div>
             <hr />
             <div className="cart-total-details">
               <b>Total</b>
-              <b>₹{cartTotal}</b>
+              <b>₹{safeTotal}</b>
             </div>
             
           </div>
           <button 
             onClick={() => {
-              console.log('Checkout button clicked!');
-              console.log('Token status:', token ? 'Logged in' : 'Not logged in');
-              
               if (!token) {
                 alert('Please log in to proceed to checkout');
                 return;
               }
-              
-              console.log('Navigating to /order');
               navigate('/order');
             }}
           >

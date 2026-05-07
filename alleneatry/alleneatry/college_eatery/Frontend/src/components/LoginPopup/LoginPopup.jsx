@@ -8,11 +8,9 @@ const LoginPopup = ({ setShowLogin }) => {
   const { url, setToken, setUser } = useContext(StoreContext)
 
   const [currState, setCurrState] = useState("Login")
-  const [authMethod, setAuthMethod] = useState('email') // 'email' or 'phone'
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const [data, setData] = useState({ name: '', email: '', password: '' })
-  const [phoneState, setPhoneState] = useState({ phone: '', otp: '', step: 'phone' })
 
   const onChangeHandler = (event) => {
     const name = event.target.name;
@@ -30,19 +28,12 @@ const LoginPopup = ({ setShowLogin }) => {
     let newUrl = url;
     let postData = {};
 
-    // Regular user endpoints (email-based)
-      if (authMethod === 'email') {
-        if (currState === "Login") {
-          newUrl += "/api/user/login";
-        } else {
-          newUrl += "/api/user/register";
-        }
-        postData = data;
-      } else {
-        // phone OTP flow handled separately
-        setLoading(false);
-        return;
-      }
+    if (currState === "Login") {
+      newUrl += "/api/user/login";
+    } else {
+      newUrl += "/api/user/register";
+    }
+    postData = data;
 
     try {
       const response = await axios.post(newUrl, postData);
@@ -75,49 +66,6 @@ const LoginPopup = ({ setShowLogin }) => {
     }
   };
 
-  // Phone OTP handlers
-  const sendOtp = async (e) => {
-    e && e.preventDefault();
-    setError('');
-    if (!phoneState.phone) return setError('Phone is required');
-    setLoading(true);
-    try {
-      const res = await axios.post(url + '/api/user/otp/send', { phone: phoneState.phone });
-      if (res.data && res.data.success) {
-        // Move to OTP entry step and prefill OTP (if returned) in a single state update
-        setPhoneState(s => ({ ...s, step: 'otp', otp: res.data.otp || s.otp }));
-        // Provide user feedback
-        setError('OTP sent to the provided phone number');
-      } else {
-        setError(res.data?.message || 'Failed to send OTP');
-      }
-    } catch (err) {
-      console.error('Send OTP error:', err);
-      setError(err.response?.data?.message || 'An error occurred');
-    } finally { setLoading(false); }
-  }
-
-  const verifyOtp = async (e) => {
-    e && e.preventDefault();
-    setError('');
-    if (!phoneState.otp) return setError('Enter OTP');
-    setLoading(true);
-    try {
-      const res = await axios.post(url + '/api/user/otp/verify', { phone: phoneState.phone, otp: phoneState.otp });
-      if (res.data && res.data.success) {
-        setToken(res.data.token);
-        setUser(res.data.user);
-        localStorage.setItem('token', res.data.token);
-        setShowLogin(false);
-      } else {
-        setError(res.data?.message || 'OTP verification failed');
-      }
-    } catch (err) {
-      console.error('Verify OTP error:', err);
-      setError(err.response?.data?.message || 'An error occurred');
-    } finally { setLoading(false); }
-  }
-
   const resetForm = () => {
     setData({ name: "", email: "", password: "" });
     setError("");
@@ -148,39 +96,14 @@ const LoginPopup = ({ setShowLogin }) => {
         )}
         
         <div className="login-popup-inputs">
-          <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-            <button type="button" onClick={() => setAuthMethod('email')} className={authMethod==='email' ? 'active-type' : ''}>Email</button>
-            <button type="button" onClick={() => setAuthMethod('phone')} className={authMethod==='phone' ? 'active-type' : ''}>Phone OTP</button>
-          </div>
-
-          {authMethod === 'email' ? (
-            <>
-              {currState === "Login" ? null : <input name='name' onChange={onChangeHandler} value={data.name} type="text" placeholder='Your name' required />}
-              <input name='email' onChange={onChangeHandler} value={data.email} type="email" placeholder='Your email' required />
-              <input name='password' onChange={onChangeHandler} value={data.password} type="password" placeholder='Your Password' required />
-            </>
-          ) : (
-            <>
-              {phoneState.step === 'phone' ? (
-                <>
-                  <input name='phone' value={phoneState.phone} onChange={(e) => setPhoneState(s => ({ ...s, phone: e.target.value.trim() }))} type='text' placeholder='Phone number' inputMode='numeric' pattern='[0-9]+' required />
-                  <button type='button' onClick={sendOtp} disabled={loading}>{loading ? 'Sending...' : 'Send OTP'}</button>
-                </>
-              ) : (
-                <>
-                  <input name='otp' value={phoneState.otp} onChange={(e) => setPhoneState(s => ({ ...s, otp: e.target.value }))} type='text' placeholder='Enter OTP' />
-                  <button type='button' onClick={verifyOtp} disabled={loading}>{loading ? 'Verifying...' : 'Verify OTP'}</button>
-                </>
-              )}
-            </>
-          )}
+          {currState === "Login" ? null : <input name='name' onChange={onChangeHandler} value={data.name} type="text" placeholder='Your name' required />}
+          <input name='email' onChange={onChangeHandler} value={data.email} type="email" placeholder='Your email' required />
+          <input name='password' onChange={onChangeHandler} value={data.password} type="password" placeholder='Your Password' required />
         </div>
-        
-        {authMethod === 'email' && (
-          <button type='submit' disabled={loading}>
-            {loading ? "Loading..." : (currState === "Sign Up" ? "Create Account" : "Login")}
-          </button>
-        )}
+
+        <button type='submit' disabled={loading}>
+          {loading ? "Loading..." : (currState === "Sign Up" ? "Create Account" : "Login")}
+        </button>
         
         <div className="login-popup-condition">
           <input type="checkbox" required />

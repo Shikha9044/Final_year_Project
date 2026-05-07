@@ -2,6 +2,23 @@ import orderModel from "../models/orderModel.js";
 import userModel from "../models/userModel.js";
 import foodModel from "../models/foodModel.js";
 
+const IST_OFFSET_MINUTES = 330;
+const getIstDayBounds = (date = new Date()) => {
+    const istNow = new Date(date.getTime() + IST_OFFSET_MINUTES * 60 * 1000);
+    const startOfIstDay = new Date(Date.UTC(
+        istNow.getUTCFullYear(),
+        istNow.getUTCMonth(),
+        istNow.getUTCDate(),
+        0,
+        0,
+        0,
+        0
+    ) - IST_OFFSET_MINUTES * 60 * 1000);
+    const endOfIstDay = new Date(startOfIstDay.getTime() + 24 * 60 * 60 * 1000);
+
+    return { startOfIstDay, endOfIstDay };
+};
+
 // Create new order
 const createOrder = async (req, res) => {
     try {
@@ -57,6 +74,9 @@ const createOrder = async (req, res) => {
             pincode: addr.zipcode || ''
         };
 
+        const normalizedPaymentMethod = paymentMethod || 'cash';
+        const isInstantPaid = ['upi', 'rfcard', 'card', 'wallet'].includes(normalizedPaymentMethod);
+
         // Create order
 
         const order = new orderModel({
@@ -65,7 +85,8 @@ const createOrder = async (req, res) => {
             totalAmount,
             deliveryAddress: formattedDeliveryAddress,
             specialInstructions: specialInstructions || '',
-            paymentMethod: paymentMethod || 'cash',
+            paymentMethod: normalizedPaymentMethod,
+            paymentStatus: isInstantPaid ? 'completed' : 'pending',
             isTodaySpecial: enrichedItems.some(item => item.isTodaySpecial),
             status: 'confirmed' // auto-confirm order on creation
         });
@@ -396,10 +417,9 @@ const getAllOrders = async (req, res) => {
         }
 
         if (date) {
-            const startDate = new Date(date);
-            const endDate = new Date(date);
-            endDate.setDate(endDate.getDate() + 1);
-            query.createdAt = { $gte: startDate, $lt: endDate };
+            const selectedDate = new Date(date);
+            const { startOfIstDay, endOfIstDay } = getIstDayBounds(selectedDate);
+            query.createdAt = { $gte: startOfIstDay, $lt: endOfIstDay };
         }
 
         const orders = await orderModel.find(query)
@@ -428,9 +448,7 @@ const getAllOrders = async (req, res) => {
 // Get order statistics (Admin only)
 const getOrderStats = async (req, res) => {
     try {
-        const today = new Date();
-        const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-        const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+        const { startOfIstDay: startOfDay, endOfIstDay: endOfDay } = getIstDayBounds();
 
         const todayOrders = await orderModel.countDocuments({
             createdAt: { $gte: startOfDay, $lt: endOfDay }

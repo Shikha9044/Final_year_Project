@@ -333,13 +333,19 @@ const Orders = () => {
                 {/* Payment & Amount */}
                 <div>
                   <h5 style={{ margin: '0 0 10px 0', color: '#333' }}>Payment Details:</h5>
+                  {(() => {
+                    const normalizedPaymentStatus = String(order.paymentStatus || 'pending').toLowerCase();
+                    const isPaymentCompleted = ['completed', 'received'].includes(normalizedPaymentStatus);
+
+                    return (
+                      <>
                   <p style={{ margin: '5px 0', fontSize: '14px' }}>
                     <strong>Method:</strong> {order.paymentMethod?.toUpperCase() || 'CASH'}
                   </p>
                   <p style={{ margin: '5px 0', fontSize: '14px' }}>
                     <strong>Status:</strong> {order.paymentStatus?.toUpperCase() || 'PENDING'}
                   </p>
-                  {order.paymentStatus === 'received' ? (
+                  {isPaymentCompleted ? (
                     <p style={{ margin: '5px 0', fontSize: '14px', color: 'green', fontWeight: 'bold' }}>
                       Payment Received: ₹{order.totalAmount}
                     </p>
@@ -353,6 +359,9 @@ const Orders = () => {
                       </p>
                     </>
                   )}
+                      </>
+                    );
+                  })()}
                 </div>
 
                 {/* Status Control */}

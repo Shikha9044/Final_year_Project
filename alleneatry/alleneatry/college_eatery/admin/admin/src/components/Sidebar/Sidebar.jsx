@@ -31,6 +31,10 @@ const Sidebar = () => {
           <img src={assets.order_icon} alt="" />
           <p>Analysis</p>
         </NavLink>
+        <NavLink to='/user-feedbacks' className="sidebar-option">
+          <img src={assets.order_icon} alt="" />
+          <p>User Feedback</p>
+        </NavLink>
   {/* Profile link removed as requested */}
       </div>
     </div>

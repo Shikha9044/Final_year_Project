@@ -6,48 +6,54 @@ import './StudentAuth.css';
 
 const StudentRegister = () => {
   const { url, setToken, setUser } = useContext(StoreContext);
-  const [phone, setPhone] = useState('');
-  const [otp, setOtp] = useState('');
-  const [step, setStep] = useState('phone'); // 'phone' or 'otp'
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [college, setCollege] = useState('');
+  const [branch, setBranch] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  const sendOtp = async (e) => {
-    e && e.preventDefault();
-    setError('');
-    if (!phone) return setError('Phone number is required');
-    setLoading(true);
-    try {
-      const res = await axios.post(url + '/api/user/otp/send', { phone });
-      if (res.data && res.data.success) {
-        setStep('otp');
-      } else {
-        setError(res.data?.message || 'Failed to send OTP');
-      }
-    } catch (err) {
-      console.error('Send OTP error', err);
-      setError(err.response?.data?.message || 'An error occurred');
-    } finally { setLoading(false); }
-  };
+  const strongPasswordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
 
-  const verifyOtp = async (e) => {
-    e && e.preventDefault();
+  const onSubmit = async (e) => {
+    e.preventDefault();
     setError('');
-    if (!otp) return setError('Enter the OTP');
+
+    if (!name || !email || !password || !confirmPassword) {
+      return setError('Name, email, password, and confirm password are required');
+    }
+
+    if (password !== confirmPassword) {
+      return setError('Passwords do not match');
+    }
+
+    if (!strongPasswordPattern.test(password)) {
+      return setError('Password must include uppercase, lowercase, numbers, and special symbols');
+    }
+
     setLoading(true);
     try {
-      const res = await axios.post(url + '/api/user/otp/verify', { phone, otp });
+      const res = await axios.post(url + '/api/user/student/register', {
+        name,
+        email,
+        password,
+        college,
+        branch,
+      });
+
       if (res.data && res.data.success) {
         setToken(res.data.token);
         setUser(res.data.user);
         localStorage.setItem('token', res.data.token);
         navigate('/');
       } else {
-        setError(res.data?.message || 'OTP verification failed');
+        setError(res.data?.message || 'Registration failed');
       }
     } catch (err) {
-      console.error('Verify OTP error', err);
+      console.error('Register error', err);
       setError(err.response?.data?.message || 'An error occurred');
     } finally { setLoading(false); }
   };
@@ -55,29 +61,36 @@ const StudentRegister = () => {
   return (
     <div className="student-auth-page">
       <div className="auth-card">
-        <h2>Sign in with Phone</h2>
+        <h2>Create your account</h2>
         {error && <div className="auth-error">{error}</div>}
-        {step === 'phone' && (
-          <form onSubmit={sendOtp} className="auth-form">
-            <label>Phone</label>
-            <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="Enter phone number" />
-            <button type="submit" disabled={loading}>{loading ? 'Sending...' : 'Send OTP'}</button>
-            <div className="auth-footer">
-              <Link to="/student/login">Use email/password instead</Link>
-            </div>
-          </form>
-        )}
+        <form onSubmit={onSubmit} className="auth-form">
+          <label>Name</label>
+          <input value={name} onChange={e => setName(e.target.value)} placeholder="Your name" />
 
-        {step === 'otp' && (
-          <form onSubmit={verifyOtp} className="auth-form">
-            <label>OTP</label>
-            <input value={otp} onChange={e => setOtp(e.target.value)} placeholder="Enter OTP" />
-            <button type="submit" disabled={loading}>{loading ? 'Verifying...' : 'Verify & Sign In'}</button>
-            <div style={{ marginTop: 8 }}>
-              <button onClick={() => setStep('phone')} className="link-like">Change phone</button>
-            </div>
-          </form>
-        )}
+          <label>Email</label>
+          <input value={email} onChange={e => setEmail(e.target.value)} type="email" placeholder="you@example.com" />
+
+          <label>Password</label>
+          <input value={password} onChange={e => setPassword(e.target.value)} type="password" placeholder="Create a strong password" />
+
+          <label>Confirm Password</label>
+          <input value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} type="password" placeholder="Re-enter your password" />
+
+          <label>College</label>
+          <input value={college} onChange={e => setCollege(e.target.value)} placeholder="College name (optional)" />
+
+          <label>Branch</label>
+          <input value={branch} onChange={e => setBranch(e.target.value)} placeholder="Branch (optional)" />
+
+          <p style={{ margin: 0, fontSize: '0.9rem', color: '#555', lineHeight: 1.4 }}>
+            Use at least 8 characters with uppercase, lowercase, a number, and a special symbol.
+          </p>
+
+          <button type="submit" disabled={loading}>{loading ? 'Creating account...' : 'Register'}</button>
+        </form>
+        <div className="auth-footer">
+          <Link to="/student/login">Already have an account? Login</Link>
+        </div>
       </div>
     </div>
   );

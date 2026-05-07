@@ -1,5 +1,6 @@
-import React, { useContext, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { StoreContext } from '../../components/Context/StoreContext';
 import StarRating from '../../components/StarRating';
 import './FeedbackPage.css';
@@ -7,9 +8,23 @@ import './FeedbackPage.css';
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
 
 const emptyFeedback = () => ({ rating: 0, comment: '' });
+const getItemIdentifier = (item) => {
+  if (item?.foodId && typeof item.foodId === 'object') {
+    return String(item.foodId._id || item.foodId.id || item._id || item.name);
+  }
+  if (item?.foodId) return String(item.foodId);
+  if (item?._id) return String(item._id);
+  return String(item?.name || 'item');
+};
 
 const FeedbackPage = () => {
-  const { token, url, user } = useContext(StoreContext);
+  const { token, url, fetchFoodList } = useContext(StoreContext);
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const apiBase = url || API_URL;
+  const highlightedOrderId = searchParams.get('orderId');
+  const cameFromPayment = searchParams.get('source') === 'payment';
+
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -18,11 +33,11 @@ const FeedbackPage = () => {
   const [submittedKeys, setSubmittedKeys] = useState({});
   const [savingKey, setSavingKey] = useState('');
 
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async () => {
     try {
       setLoading(true);
       setError('');
-      const response = await axios.get(`${url}/api/order/user-orders`, {
+      const response = await axios.get(`${apiBase}/api/order/user-orders`, {
         headers: { token }
       });
       if (response.data?.success) {
@@ -35,11 +50,11 @@ const FeedbackPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [apiBase, token]);
 
-  const fetchSubmittedFeedback = async () => {
+  const fetchSubmittedFeedback = useCallback(async () => {
     try {
-      const response = await axios.get(`${API_URL}/api/feedback/mine`, {
+      const response = await axios.get(`${apiBase}/api/feedback/mine`, {
         headers: { token }
       });
 
@@ -54,13 +69,13 @@ const FeedbackPage = () => {
     } catch (fetchError) {
       setSubmittedKeys({});
     }
-  };
+  }, [apiBase, token]);
 
   useEffect(() => {
     if (!token) return;
     fetchOrders();
     fetchSubmittedFeedback();
-  }, [token, url]);
+  }, [token, fetchOrders, fetchSubmittedFeedback]);
 
   const deliveredOrders = useMemo(() => {
     return orders.filter((order) => Array.isArray(order.items) && order.items.length > 0);
@@ -68,16 +83,18 @@ const FeedbackPage = () => {
 
   const currentOrder = deliveredOrders.find((order) => order._id === activeOrderId) || null;
 
-  const openFeedback = (order) => {
+  const getItemKey = (orderId, item) => `${orderId}-${getItemIdentifier(item)}`;
+
+  const openFeedback = useCallback((order) => {
     setActiveOrderId(order._id);
 
     const nextState = {};
     for (const item of order.items || []) {
-      const itemKey = `${order._id}-${item.foodId || item._id || item.name}`;
+      const itemKey = getItemKey(order._id, item);
       nextState[itemKey] = feedbackByItem[itemKey] || emptyFeedback();
     }
     setFeedbackByItem((prev) => ({ ...prev, ...nextState }));
-  };
+  }, [feedbackByItem]);
 
   const closeFeedback = () => {
     setActiveOrderId(null);
@@ -95,8 +112,8 @@ const FeedbackPage = () => {
   };
 
   const submitItemFeedback = async (order, item) => {
-    const itemKeyValue = item.foodId || item._id || item.name;
-    const key = `${order._id}-${itemKeyValue}`;
+    const itemKeyValue = getItemIdentifier(item);
+    const key = getItemKey(order._id, item);
     const itemState = feedbackByItem[key] || emptyFeedback();
 
     if (!itemState.rating) {
@@ -107,13 +124,14 @@ const FeedbackPage = () => {
     try {
       setSavingKey(key);
       const response = await axios.post(
-        `${API_URL}/api/feedback/submit`,
+        `${apiBase}/api/feedback/submit`,
         {
           orderId: order._id,
-          itemId: String(item.foodId || item._id || item.name),
+          itemId: itemKeyValue,
           itemName: item.name,
           itemImage: item.image,
           itemCategory: item.category,
+          feedbackScope: 'item',
           rating: itemState.rating,
           comment: itemState.comment
         },
@@ -131,15 +149,25 @@ const FeedbackPage = () => {
             comment: ''
           }
         }));
+        // Refresh menu ratings so filled stars update on food cards immediately.
+        await fetchFoodList();
       } else {
         alert(response.data?.message || 'Failed to submit feedback');
       }
     } catch (submitError) {
-      alert('Error submitting feedback');
+      alert(submitError?.response?.data?.message || 'Error submitting feedback');
     } finally {
       setSavingKey('');
     }
   };
+
+  useEffect(() => {
+    if (!highlightedOrderId || activeOrderId || deliveredOrders.length === 0) return;
+    const match = deliveredOrders.find((order) => String(order._id) === String(highlightedOrderId));
+    if (match) {
+      openFeedback(match);
+    }
+  }, [highlightedOrderId, deliveredOrders, activeOrderId, openFeedback]);
 
   if (!token) {
     return (
@@ -166,6 +194,11 @@ const FeedbackPage = () => {
         <div className="feedback-checkmark">✓</div>
         <h1>Thank you for your order!</h1>
         <p>Enjoyed your food? Rate each item and help us improve.</p>
+        {cameFromPayment && (
+          <div className="feedback-optional-note">
+            <strong>Quick and optional:</strong> Give feedback now while the experience is fresh, or skip for later.
+          </div>
+        )}
       </div>
 
       <div className="feedback-page-content">
@@ -178,6 +211,17 @@ const FeedbackPage = () => {
             Refresh
           </button>
         </div>
+
+        {cameFromPayment && highlightedOrderId && (
+          <div className="feedback-recent-order-banner">
+            <div>
+              <strong>Recent payment detected.</strong> We selected your latest order so you can rate it in a few taps.
+            </div>
+            <button type="button" onClick={() => navigate('/order-history')}>
+              Skip for now
+            </button>
+          </div>
+        )}
 
         {error && <div className="feedback-page-error">{error}</div>}
 
@@ -264,8 +308,8 @@ const FeedbackPage = () => {
 
             <div className="feedback-items-list">
               {currentOrder.items.map((item) => {
-                const itemKeyValue = item.foodId || item._id || item.name;
-                const key = `${currentOrder._id}-${itemKeyValue}`;
+                const itemKeyValue = getItemIdentifier(item);
+                const key = getItemKey(currentOrder._id, item);
                 const itemState = feedbackByItem[key] || emptyFeedback();
                 const isSubmitted = !!submittedKeys[key];
 

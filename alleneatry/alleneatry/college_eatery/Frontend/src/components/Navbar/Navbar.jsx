@@ -3,12 +3,15 @@ import "./Navbar.css";
 import { assets } from "../../assets/assets";
 import { FaHome, FaUtensils, FaPhoneAlt, FaMobileAlt } from "react-icons/fa";
 import { FaRegCommentDots } from "react-icons/fa";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { StoreContext } from "../Context/StoreContext";
 
 const Navbar = ({ setShowLogin }) => {
   const [menu, setMenu] = useState("home");
   const { token, user, setToken, setUser, cartItems } = useContext(StoreContext);
+  const location = useLocation();
+  const cartCount = cartItems ? Object.values(cartItems).reduce((a, b) => a + b, 0) : 0;
+  const hideCartBadgeOnCheckout = location.pathname === '/order';
 
   const handleLogout = () => {
     setToken("");
@@ -76,9 +79,9 @@ const Navbar = ({ setShowLogin }) => {
           <Link to="/cart">
             <img src={assets.basket_icon} alt="" />
             {/* Show cart value on basket */}
-            {cartItems && Object.values(cartItems).reduce((a, b) => a + b, 0) > 0 && (
+            {!hideCartBadgeOnCheckout && cartCount > 0 && (
               <span className="cart-value-badge">
-                {Object.values(cartItems).reduce((a, b) => a + b, 0)}
+                {cartCount}
               </span>
             )}
           </Link>

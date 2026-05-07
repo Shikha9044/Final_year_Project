@@ -2,7 +2,6 @@ import userModel from "../models/userModel.js";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import validator from "validator";
-import twilio from 'twilio';
 
 
 // login user
@@ -50,35 +49,46 @@ const createToken = (id)=>{
     return jwt.sign({id}, secret)
 }
 
-// Student registration (studentId + password)
+const isStrongPassword = (password) => {
+    return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/.test(password);
+}
+
+// Student registration (email + password)
 const registerStudent = async (req, res) => {
     try {
         const { name, password, email, studentId, college, branch } = req.body;
 
-        if (!studentId || !password || !name) {
-            return res.status(400).json({ success: false, message: 'studentId, name and password are required' });
+        if (!name || !email || !password) {
+            return res.status(400).json({ success: false, message: 'name, email and password are required' });
         }
 
-        // Check if studentId or email already exists
-        const existsByStudentId = await userModel.findOne({ studentId });
-        if (existsByStudentId) return res.status(400).json({ success: false, message: 'Student ID already registered' });
-
-        if (email) {
-            const existsByEmail = await userModel.findOne({ email });
-            if (existsByEmail) return res.status(400).json({ success: false, message: 'Email already registered' });
-            if (!validator.isEmail(email)) return res.status(400).json({ success: false, message: 'Invalid email' });
+        if (!validator.isEmail(email)) {
+            return res.status(400).json({ success: false, message: 'Invalid email' });
         }
 
-        if (password.length < 6) return res.status(400).json({ success: false, message: 'Password must be at least 6 characters' });
+        const existsByEmail = await userModel.findOne({ email });
+        if (existsByEmail) return res.status(400).json({ success: false, message: 'Email already registered' });
+
+        if (studentId) {
+            const existsByStudentId = await userModel.findOne({ studentId });
+            if (existsByStudentId) return res.status(400).json({ success: false, message: 'Student ID already registered' });
+        }
+
+        if (!isStrongPassword(password)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Password must be at least 8 characters and include uppercase, lowercase, a number, and a special symbol'
+            });
+        }
 
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
         const newUser = new userModel({
             name,
-            email: email || `${studentId}@students.local`,
+            email,
             password: hashedPassword,
-            studentId,
+            studentId: studentId || undefined,
             college: college || '',
             branch: branch || '',
             role: 'student'
@@ -141,8 +151,8 @@ const registerUser = async (req,res)=>{
         return res.json({success:false,message:"Please enter a Valid email"}); 
     }
 
-    if (password.length<8) {
-        return res.json({success:false,message:"Please enter a Strong Password"}); 
+    if (!isStrongPassword(password)) {
+        return res.json({success:false,message:"Password must include uppercase, lowercase, numbers, and special symbols"}); 
     }
 
     // hashing user password
@@ -246,8 +256,8 @@ const resetPassword = async (req, res) => {
             return res.status(400).json({ success: false, message: "Token and new password are required" });
         }
         
-        if (newPassword.length < 8) {
-            return res.status(400).json({ success: false, message: "Password must be at least 8 characters long" });
+        if (!isStrongPassword(newPassword)) {
+            return res.status(400).json({ success: false, message: "Password must include uppercase, lowercase, numbers, and special symbols" });
         }
         
         const user = await userModel.findOne({
@@ -307,71 +317,4 @@ const updateUserProfile = async (req, res) => {
 
 export {loginUser, registerUser, registerStudent, loginStudent, getUserProfile, updateUserProfile, forgotPassword, resetPassword}
 
-// OTP send and verify
-const sendOtpToPhone = async (req, res) => {
-    try {
-        const { phone } = req.body;
-        if (!phone) return res.status(400).json({ success: false, message: 'Phone number is required' });
-
-        // Find or create user by phone
-        let user = await userModel.findOne({ phone });
-        if (!user) {
-            user = new userModel({ name: 'Phone User', email: `${phone}@phone.local`, password: 'otp-placeholder', phone, role: 'student' });
-        }
-
-        // Generate 6-digit OTP
-        const otp = Math.floor(100000 + Math.random() * 900000).toString();
-        user.otp = otp;
-        user.otpExpires = Date.now() + 5 * 60 * 1000; // 5 minutes
-        await user.save();
-
-        // If Twilio is configured, send SMS. Otherwise return OTP in response for testing.
-        const accountSid = process.env.TWILIO_ACCOUNT_SID;
-        const authToken = process.env.TWILIO_AUTH_TOKEN;
-        const fromNumber = process.env.TWILIO_FROM;
-        if (accountSid && authToken && fromNumber) {
-            try {
-                const client = twilio(accountSid, authToken);
-                await client.messages.create({ body: `Your OTP is ${otp}`, from: fromNumber, to: phone });
-                return res.json({ success: true, message: 'OTP sent' });
-            } catch (twErr) {
-                console.error('Twilio send error:', twErr);
-                // Fall back to returning OTP in response for debugging
-                return res.status(500).json({ success: false, message: 'Failed to send OTP via SMS' });
-            }
-        }
-
-        // In development we avoid returning the raw OTP in the API response
-        // so the OTP is always sent only via SMS when Twilio is configured.
-        // Do not log the OTP in production or return it to the client.
-        return res.json({ success: true, message: 'OTP sent' });
-    } catch (error) {
-        console.error('Send OTP error:', error);
-        return res.status(500).json({ success: false, message: 'Error sending OTP' });
-    }
-}
-
-const verifyOtpForPhone = async (req, res) => {
-    try {
-        const { phone, otp } = req.body;
-        if (!phone || !otp) return res.status(400).json({ success: false, message: 'Phone and OTP are required' });
-
-        const user = await userModel.findOne({ phone, otp, otpExpires: { $gt: Date.now() } });
-        if (!user) return res.status(400).json({ success: false, message: 'Invalid or expired OTP' });
-
-        // clear OTP
-        user.otp = undefined;
-        user.otpExpires = undefined;
-        await user.save();
-
-        // Issue token
-        const token = createToken(user._id);
-        const userInfo = { _id: user._id, name: user.name, email: user.email, phone: user.phone, role: user.role };
-        return res.json({ success: true, token, user: userInfo });
-    } catch (error) {
-        console.error('Verify OTP error:', error);
-        return res.status(500).json({ success: false, message: 'Error verifying OTP' });
-    }
-}
-
-export { sendOtpToPhone, verifyOtpForPhone };
+export { loginUser, registerUser, registerStudent, loginStudent, getUserProfile, updateUserProfile, forgotPassword, resetPassword };

@@ -4,9 +4,10 @@ import { assets } from '../../assets/assets';
 import { StoreContext } from '../../components/Context/StoreContext';
 
 
-const FoodItem = ({ id, name, price, description, image, stock }) => {
+const FoodItem = ({ id, name, price, description, image, stock, rating = 0, ratingCount = 0 }) => {
   const { cartItems, addToCart, removeFromCart, url } = useContext(StoreContext);
   const [selected, setSelected] = useState(false);
+  const roundedRating = Math.max(0, Math.min(5, Math.round(Number(rating) || 0)));
 
   const isOutOfStock = stock === 0;
 
@@ -44,8 +45,15 @@ const FoodItem = ({ id, name, price, description, image, stock }) => {
       <div className='food-item-info'>
         <div className='food-item-name-rating'>
           <p>{name}</p>
-          <img src={assets.rating_starts} alt='' />
+          <div className='food-item-stars' aria-label={`Rating ${roundedRating} out of 5`}>
+            {[1, 2, 3, 4, 5].map((star) => (
+              <span key={star} className={star <= roundedRating ? 'filled' : 'empty'}>
+                ★
+              </span>
+            ))}
+          </div>
         </div>
+        {ratingCount > 0 && <p className='food-item-rating-count'>{rating.toFixed(1)} ({ratingCount})</p>}
         <p className='food-item-desc'>{description}</p>
         <p className='food-item-price'>₹{price}</p>
       </div>

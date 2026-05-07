@@ -61,7 +61,7 @@ const App = () => {
             <Route path="/orders/:orderId" element={<OrderDetail url={url}/>} />
             <Route path="/todays-menu" element={<TodaysMenu url={url}/>} />
             <Route path="/feedback" element={<FeedbackAdmin />} />
-            <Route path="/user-feedbacks" element={<UserFeedbacks />} />
+            <Route path="/user-feedbacks" element={<UserFeedbacks url={url} />} />
             <Route path="/analysis" element={<Analysis />} />
             <Route path="/profile" element={<AdminProfile user={user} setUser={setUser} />} />
             <Route path="/orders/:id" element={<OrderDetails />} />
